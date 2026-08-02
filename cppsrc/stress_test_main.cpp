@@ -7,6 +7,7 @@
 
 #include "order.hpp"
 #include "orderExecutioner.hpp"
+#include "constants.h"
 #include "orderManager.hpp"
 #include "store.hpp"
 
@@ -97,7 +98,7 @@ int main(int argc, char* argv[]) {
         MetricsCollector::getInstance().resetTimer();
 #endif
 
-        int num_dispatch_threads = 4;
+        int num_dispatch_threads = THREAD_COUNTS;
         vector<thread> dispatchThreads;
         int orders_per_thread = num_orders / num_dispatch_threads;
 

@@ -6,6 +6,7 @@
 #include <mutex>
 #include <algorithm>
 #include <iomanip>
+#include "constants.h"
 
 class MetricsCollector {
 private:
@@ -185,7 +186,7 @@ public:
         std::cout << "P95 Latency:            " << p95 << " \xCE\xBCs\n";
         std::cout << "P99 Latency:            " << p99 << " \xCE\xBCs\n\n";
 
-        std::cout << "Worker Threads:         4\n";
+        std::cout << "Worker Threads:         " << THREAD_COUNTS << std::endl;
         std::cout << "CPU Utilization:        " << static_cast<int>(getCpuUtilization()) << "%\n";
         std::cout << "Peak Queue Size:        " << getPeakQueueSize() << "\n";
         std::cout << "---------------------------------------------------\n";

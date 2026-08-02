@@ -9,7 +9,7 @@ thread OrderExecutioner::_sellProcessingThread;
 atomic<bool> OrderExecutioner::_isBuyProcessing{true};
 atomic<bool> OrderExecutioner::_isSellProcessing{true};
 
-unique_ptr<ThreadPool> OrderExecutioner::threadPool = make_unique<ThreadPool>(4);
+unique_ptr<ThreadPool> OrderExecutioner::threadPool = make_unique<ThreadPool>(THREAD_COUNTS);
 
 condition_variable OrderExecutioner::CV_threadPool;
 
