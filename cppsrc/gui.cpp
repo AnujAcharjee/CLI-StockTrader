@@ -2,6 +2,7 @@
 #include "store.hpp"
 #include "order.hpp"
 #include "common.hpp"
+#include "constants.h"
 
 #ifdef ENABLE_METRICS
 #include "metricsCollector.hpp"
@@ -82,11 +83,12 @@ void runStressTestTUI(OrderManager &orderMgr, int numOrders) {
 
     addTuiLog("Stress test: Dispatching 1000 orders using 4 concurrent threads...");
 
+
     // 3. Reset and start benchmark timer
     MetricsCollector::getInstance().resetTimer();
     auto startTime = std::chrono::high_resolution_clock::now();
 
-    int num_dispatch_threads = 4;
+    int num_dispatch_threads = THREAD_COUNTS;
     std::vector<std::thread> dispatchThreads;
     int orders_per_thread = NUM_ORDERS / num_dispatch_threads;
 
@@ -119,7 +121,7 @@ void runStressTestTUI(OrderManager &orderMgr, int numOrders) {
         std::this_thread::sleep_for(std::chrono::microseconds(10));
     }
 
-    double totalMs = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - startTime).count();
+    double totalMs = std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - startTime).count();
     auto &collector = MetricsCollector::getInstance();
     std::ostringstream ss;
     ss << "Stress test finished: " << NUM_ORDERS << " orders in " << std::fixed << std::setprecision(1) << totalMs << " ms (" 
