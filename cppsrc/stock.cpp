@@ -5,7 +5,7 @@ Stock::Stock(const string &symbol, float price, int qty) : _symbol(symbol), _pri
 
     StockLock::getInstance().createLock(symbol);
 
-    shared_ptr<Order> order = make_shared<Order>(symbol,ORDER_TYPE::SYSTEM, false, qty, price, nullptr, 0);
+    shared_ptr<Order> order = make_shared<Order>(symbol, ORDER_TYPE::SYSTEM, false, qty, price, nullptr, 0);
     _orderBookInstance->setInOrderBookForSell(order);
 }
 
@@ -25,7 +25,7 @@ shared_ptr<OrderBook> Stock::getOrderBookInstance() {
     return _orderBookInstance;
 }
 
-void Stock::updatePrice(const int newPrice) {
+void Stock::updatePrice(float newPrice) {
     _price.store(newPrice, std::memory_order_relaxed);
 }
 

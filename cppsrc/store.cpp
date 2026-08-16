@@ -126,7 +126,7 @@ void Store::printOrderVector() {
 
     if (_orderVtr.empty()) {
         cout << "No orders found! \n";
-        return; 
+        return;
     }
 
     // Header
@@ -177,8 +177,8 @@ void Store::printOrderVector() {
              << setw(10) << orderType;
 
         if (t) {
-            cout << put_time(localtime(&t), "%d-%m-%Y %H:%M:%S"); 
-            cout << setw(6) << " ";                               
+            cout << put_time(localtime(&t), "%d-%m-%Y %H:%M:%S");
+            cout << setw(6) << " ";
         } else {
             cout << setw(25) << " ";
         }
@@ -215,4 +215,19 @@ void Store::printExecutedOrders() {
     cout << '\n';
 
     cout << string(90, '-') << '\n';
+}
+
+unordered_map<string, shared_ptr<Stock>> Store::getStocksMapSnapshot() {
+    scoped_lock lock(stockMtx);
+    return _stocksMap;
+}
+
+vector<shared_ptr<Order>> Store::getOrderVectorSnapshot() {
+    scoped_lock lock(orderMtx);
+    return _orderVtr;
+}
+
+vector<vector<string>> Store::getExecutedOrdersSnapshot() {
+    scoped_lock lock(executedOrdersMtx);
+    return _executedOrdersVtr;
 }

@@ -15,7 +15,7 @@ double User::getFunds() const {
     return _funds;
 };
 
-const unordered_map<string, int> &User::getDemat() const {
+unordered_map<string, int> User::getDemat() const {
     std::lock_guard<std::mutex> lock(_mtx);
     return _demat;
 }
@@ -34,11 +34,12 @@ void User::addFunds(double amount) {
     _funds += amount;
 };
 
-void User::deductFunds(double amount) {
+bool User::deductFunds(double amount) {
     std::lock_guard<std::mutex> lock(_mtx);
     if (_funds < amount)
-        return;
+        return false;
     _funds -= amount;
+    return true;
 };
 
 void User::addToDemat(const string &symbol, int qty) {

@@ -23,7 +23,7 @@ vector<pair<shared_ptr<Order>, int>> OrderBook::matchOrder_Template(OppositeOrde
     float lastMatchPrice = 0;
     int matchedQty = 0;
 
-    auto it = op_book.begin(); 
+    auto it = op_book.begin();
     while (it != op_book.end() && comp(it->first, orderPtr->getPrice()) && matchedQty < targetQty) {
         auto &orderQueue = it->second;
 
@@ -49,10 +49,7 @@ vector<pair<shared_ptr<Order>, int>> OrderBook::matchOrder_Template(OppositeOrde
         }
 
         if (orderQueue.empty()) {
-            if (it->first == orderPtr->getPrice())
-                it->second.push(orderPtr);
-            else
-                it = op_book.erase(it);
+            it = op_book.erase(it);
         } else
             ++it;
     }
@@ -60,8 +57,7 @@ vector<pair<shared_ptr<Order>, int>> OrderBook::matchOrder_Template(OppositeOrde
     if (matchedQty != 0)
         Store::getStock(orderPtr->getSymbol())->updatePrice(lastMatchPrice);
 
-    if (matchedQty < targetQty && orderPtr->getOrderType() == ORDER_TYPE::LIMIT) 
-    {
+    if (matchedQty < targetQty && orderPtr->getOrderType() == ORDER_TYPE::LIMIT) {
         auto it_sm = sm_book.find(orderPtr->getPrice());
         if (it_sm == sm_book.end()) {
             auto &orderQueue = sm_book[orderPtr->getPrice()];
@@ -82,12 +78,12 @@ vector<pair<shared_ptr<Order>, int>> OrderBook::matchOrder_Template(OppositeOrde
 
 vector<pair<shared_ptr<Order>, int>> OrderBook::matchOrder_OrderBook(shared_ptr<Order> orderPtr) {
     if (orderPtr->getIsBuy()) {
-           return matchOrder_Template(_sellOrderBook, _buyOrderBook, orderPtr,
+        return matchOrder_Template(_sellOrderBook, _buyOrderBook, orderPtr,
                                    [](float bookPrice, float orderPrice) {
                                        return bookPrice <= orderPrice;
                                    });
     } else {
-               return matchOrder_Template(_buyOrderBook, _sellOrderBook, orderPtr,
+        return matchOrder_Template(_buyOrderBook, _sellOrderBook, orderPtr,
                                    [](float bookPrice, float orderPrice) {
                                        return bookPrice >= orderPrice;
                                    });
@@ -116,9 +112,9 @@ void OrderBook::printOrderBook() const {
     cout << "\n======================= Order Book for Stock: " << _symbol << " ====================\n";
     cout << left
          << setw(12) << "Qty"
-         << setw(15) << "Bid " 
+         << setw(15) << "Bid "
          << " | " << right
-         << setw(15) << "Ask" 
+         << setw(15) << "Ask"
          << setw(12) << "Qty" << '\n';
 
     cout << string(70, '-') << '\n';
@@ -144,6 +140,38 @@ void OrderBook::printOrderBook() const {
     }
 
     cout << string(70, '=') << '\n';
+}
+
+vector<pair<float, int>> OrderBook::getAggregatedBuyLevels() const {
+    vector<pair<float, int>> levels;
+    for (const auto &[price, q] : _buyOrderBook) {
+        int totalQty = 0;
+        auto qCopy = q;
+        while (!qCopy.empty()) {
+            if (qCopy.front())
+                totalQty += qCopy.front()->getPendingQty();
+            qCopy.pop();
+        }
+        if (totalQty > 0)
+            levels.emplace_back(price, totalQty);
+    }
+    return levels;
+}
+
+vector<pair<float, int>> OrderBook::getAggregatedSellLevels() const {
+    vector<pair<float, int>> levels;
+    for (const auto &[price, q] : _sellOrderBook) {
+        int totalQty = 0;
+        auto qCopy = q;
+        while (!qCopy.empty()) {
+            if (qCopy.front())
+                totalQty += qCopy.front()->getPendingQty();
+            qCopy.pop();
+        }
+        if (totalQty > 0)
+            levels.emplace_back(price, totalQty);
+    }
+    return levels;
 }
 
 OrderBook::~OrderBook() {};

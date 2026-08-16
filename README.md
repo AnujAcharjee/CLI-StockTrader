@@ -1,6 +1,6 @@
 # Stock Rush CLI
 
-**Stock Rush CLI** is a high-performance C++ stock trading simulation engine and interactive terminal user interface (TUI). It features a multi-threaded matching engine built on a thread pool architecture, capable of processing over **180,000 orders/sec** with sub-1.5 microsecond matching latencies.
+**Stock Rush CLI** is a high-performance C++ stock trading simulation engine and interactive terminal user interface (TUI). It features a multi-threaded matching engine built on a thread pool architecture, capable of processing over **210,000 orders/sec** with sub-2.5 microsecond matching latencies.
 
 ---
 
@@ -91,25 +91,25 @@ Run the dedicated benchmarking tool to stress test the matching engine's limits.
 
 ### Example Benchmark Output:
 ```text
-=== Running Headless Stress Test with 1000 orders ===
-Dispatched 1000 orders in 1 ms.
+=== Running Headless Stress Test with 1000000 orders ===
+Dispatched 1000000 orders in 42 ms.
 Processing matches...
 
-Orders Submitted:       1000
-Orders Executed:        1000
-Trades Generated:       410
+Orders Submitted:       1000000
+Orders Executed:        1000000
+Trades Generated:       363093
 
-Total Runtime:          5.4 ms
+Total Runtime:          4747.8 ms
 
-Throughput:             186,459 orders/sec
-Average Match Latency:  1.4 μs
-Median Latency:         1.1 μs
-P95 Latency:            2.6 μs
-P99 Latency:            5.9 μs
+Throughput:             210,621 orders/sec
+Average Match Latency:  2.2 μs
+Median Latency:         1.8 μs
+P95 Latency:            4.9 μs
+P99 Latency:            7.5 μs
 
-Worker Threads:         4
-CPU Utilization:        55%
-Peak Queue Size:        148
+Worker Threads:         12
+CPU Utilization:        100%
+Peak Queue Size:        67425
 ---------------------------------------------------
 === Stress Test Complete ===
 ```

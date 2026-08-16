@@ -25,7 +25,7 @@ class Stock {
     float getPrice() const noexcept;
     int getQty() const noexcept;
 
-    void updatePrice(const int newPrice);
+    void updatePrice(float newPrice);
 
     shared_ptr<OrderBook> getOrderBookInstance();
 };

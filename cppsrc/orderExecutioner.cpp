@@ -9,7 +9,8 @@ thread OrderExecutioner::_sellProcessingThread;
 atomic<bool> OrderExecutioner::_isBuyProcessing{true};
 atomic<bool> OrderExecutioner::_isSellProcessing{true};
 
-unique_ptr<ThreadPool> OrderExecutioner::threadPool = make_unique<ThreadPool>(4);
+const size_t OrderExecutioner::THREAD_POOL_SIZE = std::thread::hardware_concurrency() > 4 ? std::thread::hardware_concurrency() : 4;
+unique_ptr<ThreadPool> OrderExecutioner::threadPool = make_unique<ThreadPool>(OrderExecutioner::THREAD_POOL_SIZE);
 
 condition_variable OrderExecutioner::CV_threadPool;
 
@@ -27,6 +28,10 @@ OrderExecutioner::OrderExecutioner() {
 OrderExecutioner &OrderExecutioner::getExecutionerInstance() {
     static OrderExecutioner instance;
     return instance;
+}
+
+size_t OrderExecutioner::getThreadPoolCount() {
+    return threadPool ? threadPool->getThreadCount() : 0;
 }
 
 template <thread &processingThread, atomic<bool> &isProcessing, typename QueueType, typename CVType>
@@ -107,36 +112,27 @@ void OrderExecutioner::executeOrder(shared_ptr<Order> orderPtr) {
             throw runtime_error("executeOrder failed: OrderBook not found for symbol " + symbol);
         }
 
+        auto mutex_ptr = _lockManager.acquireLock(symbol);
+        if (!mutex_ptr) {
+            throw runtime_error("Failed to acquire stock lock for " + symbol);
+        }
+
+        unique_lock<mutex> stockLock(*mutex_ptr);
+
         vector<pair<shared_ptr<Order>, int>> accumulatedOrders;
 
-        try {
-            auto mutex_ptr = _lockManager.acquireLock(symbol);
-            if (!mutex_ptr) {
-                throw runtime_error("Failed to acquire stock lock for " + symbol);
-            }
-
-            unique_lock<mutex> stockLock(*mutex_ptr);
-
 #ifdef ENABLE_METRICS
-            auto start = std::chrono::steady_clock::now();
+        auto start = std::chrono::steady_clock::now();
 #endif
-            accumulatedOrders = orderBook->matchOrder_OrderBook(orderPtr);
+        accumulatedOrders = orderBook->matchOrder_OrderBook(orderPtr);
 #ifdef ENABLE_METRICS
-            if (!accumulatedOrders.empty()) {
-                auto end = std::chrono::steady_clock::now();
-                auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
-                get_tl_metrics().addMatch(duration);
-            }
+        if (!accumulatedOrders.empty()) {
+            auto end = std::chrono::steady_clock::now();
+            auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
+            get_tl_metrics().addMatch(duration);
+        }
 #endif
-            if (accumulatedOrders.empty()) {
-#ifdef ENABLE_METRICS
-                get_tl_metrics().flush();
-#endif
-                return;
-            }
-
-        } catch (const exception &e) {
-            cerr << "Error executing order " << orderPtr->getOrderId() << ": " << e.what() << "\n";
+        if (accumulatedOrders.empty()) {
 #ifdef ENABLE_METRICS
             get_tl_metrics().flush();
 #endif
@@ -144,6 +140,16 @@ void OrderExecutioner::executeOrder(shared_ptr<Order> orderPtr) {
         }
 
         float tradeAmount = 0.0f;
+
+        // Track completed settlements for rollback
+        struct Settlement {
+            shared_ptr<User> user;
+            string symbol;
+            int qty;
+            float price;
+            bool isBuy;
+        };
+        vector<Settlement> completedSettlements;
 
         for (size_t i = 0; i + 1 < accumulatedOrders.size(); ++i) {
             const auto &[matchedOrder, matchedQty] = accumulatedOrders[i];
@@ -158,17 +164,44 @@ void OrderExecutioner::executeOrder(shared_ptr<Order> orderPtr) {
             string m_order_symbol = matchedOrder->getSymbol();
 
             if (!user && matchedOrder->getOrderType() != ORDER_TYPE::SYSTEM) {
-                throw runtime_error("Error: User is null in matched Order");
-                return;
+                cerr << "Error: User is null in matched Order " << matchedOrder->getOrderId() << "\n";
+                continue;
             }
 
             if (user) {
-                if (matchedOrder->getIsBuy()) {
-                    user->deductFunds(price);
-                    user->addToDemat(m_order_symbol, matchedQty);
-                } else {
-                    user->addFunds(price);
-                    user->deductDemat(m_order_symbol, matchedQty);
+                try {
+                    if (matchedOrder->getIsBuy()) {
+                        if (!user->deductFunds(price)) {
+                            cerr << "Error: Insufficient funds for user " << user->getUsername()
+                                 << " on order " << matchedOrder->getOrderId() << "\n";
+                            continue;
+                        }
+                        user->addToDemat(m_order_symbol, matchedQty);
+                    } else {
+                        user->addFunds(price);
+                        user->deductDemat(m_order_symbol, matchedQty);
+                    }
+                    completedSettlements.push_back({user, m_order_symbol, matchedQty, price, matchedOrder->getIsBuy()});
+                } catch (const exception &e) {
+                    cerr << "Settlement error for order " << matchedOrder->getOrderId() << ": " << e.what() << "\n";
+                    // Rollback all previously completed settlements
+                    for (auto it = completedSettlements.rbegin(); it != completedSettlements.rend(); ++it) {
+                        try {
+                            if (it->isBuy) {
+                                it->user->addFunds(it->price);
+                                it->user->deductDemat(it->symbol, it->qty);
+                            } else {
+                                it->user->deductFunds(it->price);
+                                it->user->addToDemat(it->symbol, it->qty);
+                            }
+                        } catch (...) {
+                            cerr << "Critical: Rollback failed for user " << it->user->getUsername() << "\n";
+                        }
+                    }
+#ifdef ENABLE_METRICS
+                    get_tl_metrics().flush();
+#endif
+                    return;
                 }
             }
 
@@ -186,7 +219,27 @@ void OrderExecutioner::executeOrder(shared_ptr<Order> orderPtr) {
         string p_order_symbol = orderPtr->getSymbol();
 
         if (orderPtr->getIsBuy()) {
-            p_order_user->deductFunds(tradeAmount);
+            if (!p_order_user->deductFunds(tradeAmount)) {
+                cerr << "Error: Insufficient funds for primary order user " << p_order_user->getUsername() << "\n";
+                // Rollback matched counterparty settlements
+                for (auto it = completedSettlements.rbegin(); it != completedSettlements.rend(); ++it) {
+                    try {
+                        if (it->isBuy) {
+                            it->user->addFunds(it->price);
+                            it->user->deductDemat(it->symbol, it->qty);
+                        } else {
+                            it->user->deductFunds(it->price);
+                            it->user->addToDemat(it->symbol, it->qty);
+                        }
+                    } catch (...) {
+                        cerr << "Critical: Rollback failed for user " << it->user->getUsername() << "\n";
+                    }
+                }
+#ifdef ENABLE_METRICS
+                get_tl_metrics().flush();
+#endif
+                return;
+            }
             p_order_user->addToDemat(p_order_symbol, matchedQty);
         } else {
             p_order_user->addFunds(tradeAmount);

@@ -103,9 +103,9 @@ void placeOrder(OrderManager &orderMgr) {
         transform(expiryTypeStr.begin(), expiryTypeStr.end(), expiryTypeStr.begin(), ::toupper);
 
         if (expiryTypeStr == "DAY")
-            expirySeconds = 24 * 60 * 60;      
-        else if (expiryTypeStr == "GTC")       
-            expirySeconds = 30 * 24 * 60 * 60; 
+            expirySeconds = 24 * 60 * 60;
+        else if (expiryTypeStr == "GTC")
+            expirySeconds = 30 * 24 * 60 * 60;
         else if (expiryTypeStr == "GTD") {
             string gtdDateStr;
             cout << "Enter GTD expiry date (DD-MM-YYYY): ";
@@ -121,7 +121,7 @@ void placeOrder(OrderManager &orderMgr) {
                 return;
             }
 
-            expiryTm.tm_mon -= 1;    
+            expiryTm.tm_mon -= 1;
             expiryTm.tm_year -= 1900;
             expiryTm.tm_hour = 0;
             expiryTm.tm_min = 0;
@@ -165,8 +165,8 @@ void addUser() {
     cin >> username;
 
     while (cin.fail() || username.empty()) {
-        cin.clear();                                         
-        cin.ignore(numeric_limits<streamsize>::max(), '\n'); 
+        cin.clear();
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
         cout << "Invalid input. Please enter a valid username: \n";
         cin >> username;
     }
@@ -317,10 +317,9 @@ int main() {
             {"TTE", 68.0f, 10000},
             {"TCS", 999.0f, 10000},
             {"RELIANCE", 1250.0f, 10000},
-            {"BABA", 777.0f, 10000}
-        };
+            {"BABA", 777.0f, 10000}};
 
-        for (const auto& s : init_stocks) {
+        for (const auto &s : init_stocks) {
             Store::addStocks(s.symbol, s.price, s.qty);
         }
     } catch (const exception &e) {
@@ -342,7 +341,7 @@ int main() {
     }
 
     // Create Default Orders here - (stock, orderType, isBuy, order_price_pre_stock, user_obj, expiry_time)
-   shared_ptr<Order> order1 = make_shared<Order>("TCS", ORDER_TYPE::LIMIT, true, 1, 993.0f, user1, 24 * 60 * 60);
+    shared_ptr<Order> order1 = make_shared<Order>("TCS", ORDER_TYPE::LIMIT, true, 1, 993.0f, user1, 24 * 60 * 60);
     shared_ptr<Order> order2 = make_shared<Order>("AAPL", ORDER_TYPE::LIMIT, true, 2, 999.0f, user2, 24 * 60 * 60);
     shared_ptr<Order> order3 = make_shared<Order>("GOOGL", ORDER_TYPE::LIMIT, true, 3, 999.0f, user4, 24 * 60 * 60);
     shared_ptr<Order> order4 = make_shared<Order>("BABA", ORDER_TYPE::LIMIT, true, 4, 999.0f, user5, 24 * 60 * 60);

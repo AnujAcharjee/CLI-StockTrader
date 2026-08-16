@@ -23,7 +23,7 @@ void processOrder(OrderManager &orderMgr, shared_ptr<Order> order) {
     }
 }
 
-int main(int argc, char* argv[]) {
+int main(int argc, char *argv[]) {
     try {
         int num_orders = 1000; // Default to 1000 orders
         if (argc > 1) {
@@ -85,14 +85,15 @@ int main(int argc, char* argv[]) {
             auto stock = Store::getStock(symbol);
             float basePrice = stock ? stock->getPrice() : 500.0f;
             float price = basePrice + priceVariationDist(gen);
-            if (price <= 1.0f) price = 10.0f;
+            if (price <= 1.0f)
+                price = 10.0f;
 
             stressOrders.push_back(make_shared<Order>(symbol, ORDER_TYPE::LIMIT, isBuy, qty, price, user, 24 * 60 * 60));
         }
 
         // 4. Dispatch concurrently using a small, fixed number of generator threads
         auto startTime = chrono::high_resolution_clock::now();
-        
+
 #ifdef ENABLE_METRICS
         MetricsCollector::getInstance().resetTimer();
 #endif
@@ -128,7 +129,7 @@ int main(int argc, char* argv[]) {
 
         // 5. Wait for matches to complete in the ThreadPool
         cout << "Processing matches..." << endl;
-        
+
         // Poll the processed order count until all dispatched orders have been matched/processed and thread pool is idle
         while (true) {
 #ifdef ENABLE_METRICS
@@ -142,7 +143,7 @@ int main(int argc, char* argv[]) {
             this_thread::sleep_for(chrono::milliseconds(100));
             break;
 #endif
-            this_thread::sleep_for(chrono::microseconds(10));
+            this_thread::sleep_for(chrono::milliseconds(1));
         }
 
 #ifdef ENABLE_METRICS

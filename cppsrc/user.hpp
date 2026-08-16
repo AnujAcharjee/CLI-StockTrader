@@ -4,8 +4,7 @@
 
 #include "common.hpp"
 
-class User
-{
+class User {
     string _username;
     double _funds;
     unordered_map<string, int> _demat;
@@ -16,11 +15,11 @@ class User
 
     string getUsername() const;
     double getFunds() const;
-    const unordered_map<string, int> &getDemat() const;
+    unordered_map<string, int> getDemat() const;
     int getStockQty_in_demat(const string &symbol) const;
 
     void addFunds(double amount);
-    void deductFunds(double amount);
+    bool deductFunds(double amount);
     void addToDemat(const string &symbol, int qty);
     void deductDemat(const string &symbol, int qty);
 

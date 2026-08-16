@@ -4,8 +4,7 @@
 
 #include "common.hpp"
 
-class StockLock
-{
+class StockLock {
     static unordered_map<string, shared_ptr<mutex>> _lockMap;
     static mutex Mtx_lockMap;
 

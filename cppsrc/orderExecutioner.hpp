@@ -13,8 +13,7 @@
 #include "store.hpp"
 #include "threadPool.hpp"
 
-class OrderExecutioner
-{
+class OrderExecutioner {
   private:
     static thread _buyProcessingThread;
     static thread _sellProcessingThread;
@@ -39,7 +38,10 @@ class OrderExecutioner
     OrderExecutioner &operator=(const OrderExecutioner &) = delete;
 
   public:
+    static const size_t THREAD_POOL_SIZE;
+
     static OrderExecutioner &getExecutionerInstance();
+    static size_t getThreadPoolCount();
 
     template <thread &processingThread, atomic<bool> &isProcessing, typename QueueType, typename CVType>
     void checkExecutionQueue(QueueType &executionQueue, CVType &cv, const string &queueType);

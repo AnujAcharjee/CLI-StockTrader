@@ -24,7 +24,7 @@ void OrderManager::setOrderInQueue(shared_ptr<Order> order) {
 
         _BuyExecutionQueue.push(order);
 #ifdef ENABLE_METRICS
-        MetricsCollector::getInstance().updatePeakQueueSize(_BuyExecutionQueue.size() + _SellExecutionQueue.size());
+        MetricsCollector::getInstance().updatePeakQueueSize(_BuyExecutionQueue.size());
 #endif
         CV_buyProcessing.notify_one();
     } else {
@@ -32,7 +32,7 @@ void OrderManager::setOrderInQueue(shared_ptr<Order> order) {
 
         _SellExecutionQueue.push(order);
 #ifdef ENABLE_METRICS
-        MetricsCollector::getInstance().updatePeakQueueSize(_BuyExecutionQueue.size() + _SellExecutionQueue.size());
+        MetricsCollector::getInstance().updatePeakQueueSize(_SellExecutionQueue.size());
 #endif
         CV_sellProcessing.notify_one();
     }

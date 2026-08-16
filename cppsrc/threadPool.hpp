@@ -15,25 +15,24 @@
 
 using namespace std;
 
-class ThreadPool
-{
+class ThreadPool {
     vector<jthread> _workers;
     queue<move_only_function<void()>> _tasks;
     mutex _queueMutex;
     condition_variable _condition;
     bool _stop = false;
 
-public:
+  public:
     explicit ThreadPool(size_t numThreads);
     ~ThreadPool();
+    
+    size_t getThreadCount() const { return _workers.size(); }
 
     template <class F, class... Args>
-    auto enqueue(F &&f, Args &&...args) -> future<invoke_result_t<F, Args...>>
-    {
+    auto enqueue(F &&f, Args &&...args) -> future<invoke_result_t<F, Args...>> {
         using ReturnType = invoke_result_t<F, Args...>;
         auto task = packaged_task<ReturnType()>(
-            [func = forward<F>(f), ... args = forward<Args>(args)]() mutable
-            {
+            [func = forward<F>(f), ... args = forward<Args>(args)]() mutable {
 #ifdef ENABLE_METRICS
                 MetricsCollector::getInstance().incrementActiveThreads();
                 auto start = std::chrono::steady_clock::now();

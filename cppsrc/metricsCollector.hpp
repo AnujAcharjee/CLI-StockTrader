@@ -8,7 +8,7 @@
 #include <iomanip>
 
 class MetricsCollector {
-private:
+  private:
     std::atomic<unsigned long long> _totalOrdersSubmitted{0};
     std::atomic<unsigned long long> _totalOrdersProcessed{0};
     std::atomic<unsigned long long> _totalMatches{0};
@@ -28,8 +28,8 @@ private:
 
     MetricsCollector() : _startTime(std::chrono::steady_clock::now()) {}
 
-public:
-    static MetricsCollector& getInstance() {
+  public:
+    static MetricsCollector &getInstance() {
         static MetricsCollector instance;
         return instance;
     }
@@ -67,7 +67,8 @@ public:
 
     void updatePeakQueueSize(size_t currentSize) {
         size_t prev = _peakQueueSize.load(std::memory_order_relaxed);
-        while (currentSize > prev && !_peakQueueSize.compare_exchange_weak(prev, currentSize, std::memory_order_relaxed));
+        while (currentSize > prev && !_peakQueueSize.compare_exchange_weak(prev, currentSize, std::memory_order_relaxed))
+            ;
     }
 
     unsigned long long getTotalOrdersSubmitted() const {
@@ -93,7 +94,7 @@ public:
         return _totalMatches.load(std::memory_order_relaxed);
     }
 
-    void submitBatchedStats(unsigned long long orders, unsigned long long matches, unsigned long long latencyNs, unsigned long long matchesWithLatency, const std::vector<double>& latencies) {
+    void submitBatchedStats(unsigned long long orders, unsigned long long matches, unsigned long long latencyNs, unsigned long long matchesWithLatency, const std::vector<double> &latencies) {
         _totalOrdersProcessed.fetch_add(orders, std::memory_order_relaxed);
         _totalMatches.fetch_add(matches, std::memory_order_relaxed);
         _totalMatchLatencyNs.fetch_add(latencyNs, std::memory_order_relaxed);
@@ -122,18 +123,22 @@ public:
 
     double getAvgMatchLatencyMs() const {
         unsigned long long count = _totalMatchedOrdersCount.load(std::memory_order_relaxed);
-        if (count == 0) return 0.0;
+        if (count == 0)
+            return 0.0;
         return (static_cast<double>(_totalMatchLatencyNs.load(std::memory_order_relaxed)) / count) / 1'000'000.0;
     }
 
     double getCpuUtilization() const {
         auto now = _timerStopped.load(std::memory_order_relaxed) ? _endTime : std::chrono::steady_clock::now();
         double elapsedSec = std::chrono::duration<double>(now - _startTime).count();
-        if (elapsedSec <= 0) return 0.0;
+        if (elapsedSec <= 0)
+            return 0.0;
         double totalAvailableNs = elapsedSec * 4.0 * 1'000'000'000.0;
         double utilization = (static_cast<double>(_totalCpuTimeNs.load(std::memory_order_relaxed)) / totalAvailableNs) * 100.0;
-        if (utilization > 100.0) utilization = 100.0;
-        if (utilization < 0.0) utilization = 0.0;
+        if (utilization > 100.0)
+            utilization = 100.0;
+        if (utilization < 0.0)
+            utilization = 0.0;
         return utilization;
     }
 
@@ -178,7 +183,7 @@ public:
 
         std::cout << std::defaultfloat;
         std::cout << "Throughput:             " << formatWithCommas(static_cast<unsigned long long>(getOrdersProcessedPerSec())) << " orders/sec\n";
-        
+
         std::cout << std::fixed << std::setprecision(1);
         std::cout << "Average Match Latency:  " << avgLatencyUs << " \xCE\xBCs\n";
         std::cout << "Median Latency:         " << median << " \xCE\xBCs\n";
@@ -205,7 +210,8 @@ struct ThreadLocalMetrics {
 
     void addOrder() {
         pendingOrders++;
-        if (pendingOrders >= 1000) flush();
+        if (pendingOrders >= 1000)
+            flush();
     }
 
     void addMatch(unsigned long long ns) {
@@ -213,7 +219,8 @@ struct ThreadLocalMetrics {
         pendingLatencyNs += ns;
         pendingMatchedOrdersCount++;
         pendingLatencies.push_back(static_cast<double>(ns));
-        if (pendingMatches >= 100) flush();
+        if (pendingMatches >= 100)
+            flush();
     }
 
     void flush() {
@@ -228,7 +235,7 @@ struct ThreadLocalMetrics {
     }
 };
 
-inline ThreadLocalMetrics& get_tl_metrics() {
+inline ThreadLocalMetrics &get_tl_metrics() {
     thread_local ThreadLocalMetrics tl_metrics;
     return tl_metrics;
 }

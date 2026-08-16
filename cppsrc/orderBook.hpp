@@ -12,12 +12,12 @@
 
 class OrderBook {
     string _symbol;
-    map<float, queue<shared_ptr<Order>>, greater<float>> _buyOrderBook; 
-    map<float, queue<shared_ptr<Order>>> _sellOrderBook;                
+    map<float, queue<shared_ptr<Order>>, greater<float>> _buyOrderBook;
+    map<float, queue<shared_ptr<Order>>> _sellOrderBook;
 
     template <typename OppositeOrderBook, typename SameOrderBook, typename CompareFunc>
     vector<pair<shared_ptr<Order>, int>> matchOrder_Template(OppositeOrderBook &op_book, SameOrderBook &sm_book,
-                                                              shared_ptr<Order> orderPtr, CompareFunc comp);
+                                                             shared_ptr<Order> orderPtr, CompareFunc comp);
 
   public:
     OrderBook(const string &symbol);
@@ -25,9 +25,12 @@ class OrderBook {
 
     vector<pair<shared_ptr<Order>, int>> matchOrder_OrderBook(shared_ptr<Order> orderPtr);
 
-    const map<float, queue<shared_ptr<Order>>, greater<float>>& getBuyOrderBook() const { return _buyOrderBook; }
-    const map<float, queue<shared_ptr<Order>>>& getSellOrderBook() const { return _sellOrderBook; }
+    const map<float, queue<shared_ptr<Order>>, greater<float>> &getBuyOrderBook() const { return _buyOrderBook; }
+    const map<float, queue<shared_ptr<Order>>> &getSellOrderBook() const { return _sellOrderBook; }
 
     void setInOrderBookForSell(shared_ptr<Order> orderPtr);
     void printOrderBook() const;
+
+    vector<pair<float, int>> getAggregatedBuyLevels() const;
+    vector<pair<float, int>> getAggregatedSellLevels() const;
 };
